@@ -2,7 +2,9 @@ package com.example.notebook.task;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.ModelAndView;
 
 import java.util.List;
 
@@ -14,48 +16,46 @@ public class TaskController {
     // в реальній розробці не використовують System.out.println(),
     // а використовують Logger для виводу інформації в консоль
     //private static final Logger logger = LoggerFactory.getLogger(NoteService.class);
-
-    @PostMapping(value = "/create")
-    public Task createTask(@RequestBody Task task){
-        return taskService.add(task);
+    @GetMapping("/tasks")
+    public ModelAndView viewTasks() {
+        ModelAndView result = new ModelAndView("tasks");
+        List<Task> tasks = taskService.listAll();
+        result.addObject("tasks", tasks);
+        return result; // Це відповідає імені файлу шаблону tasks.html
     }
-
-    @GetMapping(value = "/list")
-    public List<Task> getListOfNotes(){
-        return taskService.listAll();
+    @PostMapping(value = "/create")
+    //використовується анотація @ModelAttribute, щоб отримати дані з форми.
+    public String createTask(@ModelAttribute Task task){
+        taskService.add(task);
+        return "redirect:/task/tasks";
     }
 
     @DeleteMapping(value = "/delete")
-    public ResponseEntity<String> deleteById(@RequestParam(name = "id") long id){
-        Task existingNote = taskService.getById(id);
-        if(existingNote == null){
-            return ResponseEntity.notFound().build();
-        }
+    public String deleteById(@RequestParam(name = "id") long id){
         taskService.deleteById(id);
-        return ResponseEntity.ok("Task deleted successfully");
-        //return "redirect:/note/list";
+        return "redirect:/task/tasks";
     }
 
     @GetMapping(value = "/edit")
-    public ResponseEntity<Task> editNote(@RequestParam(name = "id") long id){
-        //another variant is to use: @PathVariable Long id
+    public ModelAndView editNote(@RequestParam(name = "id") long id) {
         Task existingNote = taskService.getById(id);
         if (existingNote == null) {
-            return ResponseEntity.notFound().build();
+            return new ModelAndView("redirect:/task/tasks");
         }
-        return ResponseEntity.ok(existingNote);
+        ModelAndView modelAndView = new ModelAndView("edit");
+        modelAndView.addObject("task", existingNote);
+        return modelAndView;
     }
 
 
     //OR @PostMapping for update
     @PutMapping("/edit")
-    public ResponseEntity<String> editNote(@RequestBody  Task note){
-        Task existingNote = taskService.getById(note.getId());
-        if (existingNote == null) {
-            return ResponseEntity.notFound().build();
-        }
-        taskService.update(note);
-        return ResponseEntity.ok("Task updated successfully");
-
+    public String editTask(@ModelAttribute Task task) {
+        taskService.update(task);
+        return "redirect:/task/tasks";
     }
 }
+
+
+
+
